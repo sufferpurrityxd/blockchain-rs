@@ -51,7 +51,6 @@ impl Miner {
         }
     }
 
-
     fn is_ready_to_sign_txs(&self, b: &Block) -> bool {
         let unsigned_txs = self.blockchain.unsigned_txs.clone();
         let block_ts = DateTime::<Utc>::from(
