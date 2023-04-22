@@ -1,10 +1,10 @@
-use crate::block::Block;
-use crate::transaction::Transaction;
+use std::vec;
 
-mod transaction;
+mod tx;
 mod block;
-mod errors;
-mod chain;
+mod blockchain;
+mod address;
+mod miner;
 
 fn main() -> std::io::Result<()> {
     pretty_env_logger::try_init_timed().unwrap();
