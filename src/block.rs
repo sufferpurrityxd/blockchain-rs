@@ -9,14 +9,18 @@ pub struct Block {
     pub index: u32,
     pub hash: String,
     pub prevblock_hash: String,
-    pub transactions: Option<Vec<Transaction>>,
+    pub transactions: Vec<Transaction>,
     pub nonce: u32,
     pub timestamp: i64,
 }
 
 
 impl Block {
-    pub fn new(prevblock_index: u32, prevblock_hash: String, transactions: Option<Vec<Transaction>>) -> Result<Self, BlockError> {
+    pub fn new(
+        prevblock_index: u32,
+        prevblock_hash: String,
+        transactions: Vec<Transaction>
+    ) -> Result<Self, BlockError> {
         let mut block = Self {
             index: prevblock_index+1,
             hash: String::new(),
