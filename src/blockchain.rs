@@ -1,14 +1,13 @@
-use std::sync::{Arc, Mutex};
 use crate::{
     tx::Tx,
     block::Block,
 };
 
 pub struct Blockchain {
-    pub blocks: Arc<Mutex<Vec<Block>>>,
+    pub blocks: Vec<Block>,
 
     // Transactions that will be included in the next block after they are validated
-    pub unsigned_txs: Arc<Mutex<Vec<Tx>>>,
+    pub unsigned_txs: Vec<Tx>,
 }
 
 impl Blockchain {
@@ -20,27 +19,30 @@ impl Blockchain {
         return Self { 
             blocks: match blocks {
                 // If that a first run of blockchain
-                None => Arc::new(Mutex::new(vec![create_genesis_block()])),
+                None => vec![create_genesis_block()],
 
                 // If we are accept blocks from chain,
                 // so we are dont need to create are vec with blocks
-                Some(blocks) => Arc::new(Mutex::new(blocks)),
+                Some(blocks) => blocks,
             },
             unsigned_txs: match unsigned_txs {
                 // If that a first run of blockchain
-                None => Arc::new(Mutex::new(vec![Default::default()])),
+                None => vec![Default::default()],
                 // If we are accept blocks from chain,
                 // so we are dont need to create are vec with unsigned txs
-                Some(unsigned_txs) => Arc::new(Mutex::new(unsigned_txs)),
+                Some(unsigned_txs) => unsigned_txs,
             }
         }
     }
 
-
+    pub fn add_block(&mut self, block: Block) {
+        log::debug!("Added new block: {block:?}");
+        self.blocks.push(block);
+    }
 
     pub fn add_unsigned_tx(&mut self, tx: Tx) {
         log::debug!("Added new unsigned transaction: {tx:?}");
-        self.unsigned_txs.lock().unwrap().push(tx)
+        self.unsigned_txs.push(tx)
     }
 }
 
@@ -52,6 +54,7 @@ fn create_genesis_block() -> Block {
         prevblock_hash: "".to_string(),
         txs: Vec::default(),
         nonce: 0,
+        difficulty: 0,
         timestamp: chrono::Utc::now().timestamp(),
     };
 }

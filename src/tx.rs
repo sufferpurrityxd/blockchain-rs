@@ -21,7 +21,7 @@ impl Tx {
             addr_to: addr_to,
             amount: amount,
         };
-        tx.prepare_hash().unwrap();
+        tx.txid = tx.prepare_hash().unwrap();
         return tx;
     }
 

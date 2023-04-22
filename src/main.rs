@@ -1,5 +1,3 @@
-use std::vec;
-
 mod tx;
 mod block;
 mod blockchain;
