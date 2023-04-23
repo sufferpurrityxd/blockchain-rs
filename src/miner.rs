@@ -33,13 +33,11 @@ impl Miner {
                 let signed_txs = self.sign_txs();
                 match signed_txs {
                     Some(txs) => {
-                        // TODO: Add dynamic block difficulty (count of 0 in block_hash)
-                        let difficulty = 1;
                         let block = Block::new(
                             b.index.clone(),
                             b.hash.clone(),
                             txs,
-                            difficulty,
+                            self.blockchain.difficulty.clone(),
                         );
                         self.blockchain.add_block(block);
                         self.blockchain.unsigned_txs = vec![Tx::default()];

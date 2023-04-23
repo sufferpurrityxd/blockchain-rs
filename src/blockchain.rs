@@ -8,13 +8,23 @@ pub struct Blockchain {
 
     // Transactions that will be included in the next block after they are validated
     pub unsigned_txs: Vec<Tx>,
+
+    // Difficulty for block hash
+    //
+    // Examples hashes:
+    //      000000000000000000054f98cb7d450451ae8926a8da78c74b7658d49565ba37
+    //      difficulty=19
+    //
+    //      00000000004124f1d54f98cb7d450451ae8926a8da78c74b7658d49565ba37f1
+    //      difficulty=10
+    pub difficulty: usize,
 }
 
 impl Blockchain {
     pub fn new(
         blocks: Option<Vec<Block>>,
         unsigned_txs: Option<Vec<Tx>>,
-
+        difficulty: Option<usize>,
     ) -> Self {
         return Self { 
             blocks: match blocks {
@@ -31,7 +41,11 @@ impl Blockchain {
                 // If we are accept blocks from chain,
                 // so we are dont need to create are vec with unsigned txs
                 Some(unsigned_txs) => unsigned_txs,
-            }
+            },
+            difficulty: match difficulty {
+                None => 4,
+                Some(difficulty) => difficulty,
+            },
         }
     }
 

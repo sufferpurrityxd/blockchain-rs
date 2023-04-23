@@ -31,10 +31,9 @@ impl Block {
             txs: txs,
             nonce: 0,
             difficulty: difficulty,
-            timestamp: chrono::Utc::now().timestamp(),
+            timestamp: 0,
         };
         let _ = block.proof_of_work();
-        log::info!("Mined new block: {:?}", block);
         return block
     }
 
@@ -48,6 +47,7 @@ impl Block {
             let hash = self.prepare_hash().unwrap();
             if hash.starts_with(&hash_starts_with) {
                 self.hash = hash;
+                self.timestamp = chrono::Utc::now().timestamp();
                 return Ok(());
             }
             self.nonce += 1;
