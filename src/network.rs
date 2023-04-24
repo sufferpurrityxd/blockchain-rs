@@ -1,5 +1,3 @@
-use futures::prelude::*;
-
 use libp2p::{
     Transport,
     gossipsub,
@@ -37,8 +35,7 @@ impl From<mdns::Event> for BlockchainBehaviourEvent {
     }
 }
 
-
-pub async fn run_node() -> Result<(), Box<dyn std::error::Error>> {
+pub fn swarm_builder() -> Result<swarm::Swarm<BlockchainBehaviour>, Box<dyn std::error::Error>> {
     let keypair = identity::Keypair::generate_ed25519();
     let peer_id = PeerId::from(keypair.public());
     let gossipsub_topic = gossipsub::IdentTopic::new("blockchain");
@@ -78,24 +75,5 @@ pub async fn run_node() -> Result<(), Box<dyn std::error::Error>> {
         behaviour.gossipsub.subscribe(&gossipsub_topic).unwrap();
         swarm::SwarmBuilder::with_async_std_executor(transport, behaviour, peer_id).build()
     };
-
-    swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
-    log::info!("Start swarm listener");
-    loop {
-        futures::select! {
-            event = swarm.select_next_some() => match event {
-                swarm::SwarmEvent::Behaviour(BlockchainBehaviourEvent::Mdns(mdns::Event::Discovered(list))) => {
-                    for (peer_id, _multiaddr) in list {
-                        swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
-                    }
-                },
-                swarm::SwarmEvent::Behaviour(BlockchainBehaviourEvent::Mdns(mdns::Event::Expired(list))) => {
-                    for (peer_id, _multiaddr) in list {
-                        swarm.behaviour_mut().gossipsub.remove_explicit_peer(&peer_id);
-                    }
-                },
-                _ => {}
-            }
-        }
-    }
+    return Ok(swarm);
 }
