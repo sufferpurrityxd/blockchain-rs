@@ -3,6 +3,7 @@ use crate::{
     block::Block,
 };
 
+
 pub struct Blockchain {
     pub blocks: Vec<Block>,
 
@@ -26,7 +27,7 @@ impl Blockchain {
         unsigned_txs: Option<Vec<Tx>>,
         difficulty: Option<usize>,
     ) -> Self {
-        return Self { 
+        return Self {
             blocks: match blocks {
                 // If that a first run of blockchain
                 None => vec![create_genesis_block()],

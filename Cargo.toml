@@ -16,6 +16,10 @@ multiaddr = "0.17.1"
 async-trait = "0.1"
 either = "1.8"
 futures = "0.3.28"
+serde_json = "1.0.96"
+tokio = { version = "1.27.0", features = [
+    "full",
+]}
 async-std = { version = "1.12", features = [
     "attributes"
 ] }

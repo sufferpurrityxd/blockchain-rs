@@ -8,7 +8,7 @@ mod storage;
 mod node;
 mod user;
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> std::io::Result<()> {
     pretty_env_logger::try_init_timed().unwrap();
 
