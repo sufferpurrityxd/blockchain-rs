@@ -6,3 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+log = "0.4.17"
+void = "1.0.2"
+either = "1.8.1"
+futures = "0.3.28"
+multiaddr = "0.17.1"
+pretty_env_logger = "0.4.0"
+async-std = { version = "1.12", features = [
+    "attributes",
+] }
+libp2p = { version = "0.51.3", features = ["async-std", "gossipsub", "mdns", "noise", "macros", "tcp", "yamux"]}
