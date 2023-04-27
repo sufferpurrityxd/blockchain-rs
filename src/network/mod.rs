@@ -95,7 +95,10 @@ impl NetworkLoop {
   pub async fn execute(mut self) -> std::io::Result<()> {
     loop {
       futures::select! {
-        event = self.swarm.next() => self.handle_swarm_event(event.expect("1")).await,
+        event = self.swarm.next() => match event {
+          Some(e) => self.handle_swarm_event(e).await,
+          None => log::error!("Empty event from peer"),
+        },
       }
     }
   }
