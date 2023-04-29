@@ -3,7 +3,7 @@ mod network;
 mod chain;
 
 #[async_std::main]
-async fn main() -> Result<(), Box< dyn std::error::Error>> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
   pretty_env_logger::init_timed();
 
   let storage = storage::Storage::new();

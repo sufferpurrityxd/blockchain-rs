@@ -59,7 +59,7 @@ impl Miner {
         .unwrap(),
       Utc
     );
-    if last_block_dt + chrono::Duration::minutes(10) > Utc::now() { return true };
+    if last_block_dt + chrono::Duration::minutes(1) > Utc::now() { return true };
     return false;
   }
 
@@ -80,6 +80,7 @@ impl Miner {
           Ok(_) => self.blockchain.add_block(block),
           Err(e) => log::error!("Failed to push new block into chain: {e:?}"),
         }
+        self.blockchain.transactions = Vec::new();
       },
       None => log::error!("Got empty blockchain while creating new block")
     }
