@@ -30,6 +30,7 @@ use crate::{
   },
 };
 use crate::chain::block::Block;
+use crate::network::actions::GossipsubEvent;
 
 const MAX_TRANSMIT_SIZE: usize = 262144;
 
@@ -82,24 +83,6 @@ impl NetworkLoop {
     }
   }
 
-  pub async fn handle_gossipsub_message(&mut self, message: gossipsub::Message) {
-    match bincode::deserialize::<Event>(message.data.as_slice()) {
-      Ok(event) => match event {
-        Event::SyncBlock { key, block } => {
-          match self.storage.get_block(key) {
-            Some(_) => log::info!("Block with index: {key:?} already exists"),
-            None => {
-              self.add_block(key, &block).await;
-              self.event_tx.send(Event::SyncBlock { key, block }).await.unwrap();
-            },
-          };
-        },
-      }
-      Err(e) => log::error!("Failed to deserialize message from gossipsub, e: {e:?}"),
-    }
-  }
-
-
   pub async fn handle_swarm_event(
     &mut self,
     event: swarm::SwarmEvent<
@@ -150,9 +133,9 @@ impl NetworkLoop {
 
   pub async fn handle_command(&mut self, command: Command) {
     match command {
-      Command::AddBlock { key,block} => {
-        self.add_block(key, &block).await;
-        match bincode::serialize(&Event::SyncBlock { key, block }) {
+      Command::AddBlock(sync) => {
+        self.add_block(sync.key, &sync.block).await;
+        match bincode::serialize(&GossipsubEvent::SyncNetworkBlock(sync) ) {
           Ok(event) => {
               match self.swarm.behaviour_mut().gossipsub.publish(
                 gossipsub::IdentTopic::new("BLOCK"),
@@ -165,7 +148,23 @@ impl NetworkLoop {
           Err(e) => log::error!("Failed to serialize block, e: {e:?}"),
         }
       }
-      _ => {},
+    }
+  }
+
+  pub async fn handle_gossipsub_message(&mut self, message: gossipsub::Message) {
+    match bincode::deserialize::<GossipsubEvent>(message.data.as_slice()) {
+      Ok(event) => match event {
+        GossipsubEvent::SyncNetworkBlock(sync)=> {
+          match self.storage.get_block(sync.key) {
+            Some(_) => log::info!("Block with index: {:?} already exists", sync.key),
+            None => {
+              self.add_block(sync.key, &sync.block).await;
+              self.event_tx.send(Event::SyncBlock(sync)).await.unwrap();
+            },
+          };
+        },
+      }
+      Err(e) => log::error!("Failed to deserialize message from gossipsub, e: {e:?}"),
     }
   }
 

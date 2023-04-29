@@ -1,22 +1,27 @@
 use serde::{Deserialize, Serialize};
-use crate::chain::{
-  block::Block,
-  transaction::Transaction,
-};
+use crate::chain::{block::Block};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BlockSyncMeta {
+  pub key: i32,
+  pub block: Block,
+}
+
 
 #[derive(Serialize, Deserialize)]
 pub enum Command {
-  AddBlock {
-    key: i32,
-    block: Block,
-  },
-  Transaction(Transaction),
+  // Sync block around miner -> local node
+  AddBlock(BlockSyncMeta),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Event {
-  SyncBlock {
-    key: i32,
-    block: Block,
-  }
+  // Sync block around global node -> miner
+  SyncBlock(BlockSyncMeta)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum GossipsubEvent {
+  // Sync block around global nodes <-> local node
+  SyncNetworkBlock(BlockSyncMeta)
 }

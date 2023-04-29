@@ -8,14 +8,17 @@ use futures::{SinkExt, channel::mpsc::{
   Receiver,
 }};
 use crate::{
-  chain::blockchain::Blockchain,
+  chain::{
+    block::Block,
+    blockchain::Blockchain,
+  },
   network::actions::{
+    BlockSyncMeta,
     Command,
     Event,
   },
 };
-use crate::chain::block::Block;
-use crate::network::actions::Command::AddBlock;
+
 
 const MAX_TRANSACTIONS_IN_BLOCK: usize = 5000;
 
@@ -47,7 +50,7 @@ impl Miner {
 
   async fn handle_event(&mut self, event: Event) {
     match event {
-      Event::SyncBlock { block, .. } => self.blockchain.add_block(block),
+      Event::SyncBlock(sync)  => self.blockchain.add_block(sync.block),
     }
   }
 
@@ -76,7 +79,10 @@ impl Miner {
           block.index.clone(),
           valid_transactions,
           self.blockchain.difficulty.clone());
-        match self.command_tx.send(AddBlock { key: block.index.clone() as i32, block: block.clone() }).await {
+        match self.command_tx.send( Command::AddBlock(BlockSyncMeta {
+          key: block.index.clone() as i32,
+          block: block.clone(),
+        })).await {
           Ok(_) => self.blockchain.add_block(block),
           Err(e) => log::error!("Failed to push new block into chain: {e:?}"),
         }
