@@ -43,7 +43,7 @@ impl Storage {
   pub fn add_item<'a, Item: Serialize + Deserialize<'a>>(
     &self,
     key: i32,
-    item: Item,
+    item: &Item,
   ) -> Result<(), Error> {
     return self
       .0
