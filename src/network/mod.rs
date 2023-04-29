@@ -28,6 +28,7 @@ use crate::{
     Command,
   },
 };
+use crate::chain::block::Block;
 
 const MAX_TRANSMIT_SIZE: usize = 262144;
 
@@ -87,10 +88,7 @@ impl NetworkLoop {
           match self.storage.get_block(key) {
             Some(_) => log::info!("Block with index: {key:?} already exists"),
             None => {
-              match self.storage.add_item(key, &block) {
-                Ok(_) => log::info!("Added block into storage from network"),
-                Err(e) => log::error!("Failed to add block from network: {e:?}"),
-              };
+              self.add_block(key, &block).await;
               self.event_tx.send(Event::SyncBlock {key, block}).await.unwrap();
             },
           };
@@ -151,14 +149,8 @@ impl NetworkLoop {
 
   pub async fn handle_command(&mut self, command: Command) {
     match command {
-      Command::AddBlock {
-        key,
-        block
-      } => {
-        match self.storage.add_item(key, &block) {
-          Ok(_) => log::info!("Added new block into storage"),
-          Err(e) => log::error!("Failed to add new block into storage, e: {e:?}")
-        }
+      Command::AddBlock { key,block} => {
+        self.add_block(key, &block).await;
         match bincode::serialize(&Event::SyncBlock { key, block }) {
           Ok(event) => {
               match self.swarm.behaviour_mut().gossipsub.publish(
@@ -177,6 +169,7 @@ impl NetworkLoop {
   }
 
   pub async fn execute(mut self) -> std::io::Result<()> {
+    // Run network
     loop {
       futures::select! {
         event = self.swarm.next() => match event {
@@ -189,6 +182,14 @@ impl NetworkLoop {
         },
       }
     }
+  }
+
+  pub async fn add_block(&mut self, key: i32, block: &Block) {
+    // Add new block into Storage
+    match self.storage.add_item(key, block) {
+      Ok(_) => log::info!("Added new block into storage: {block:?}"),
+      Err(e) => log::error!("Failed to add new block into storage, e: {e:?}"),
+    };
   }
 }
 
