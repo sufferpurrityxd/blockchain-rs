@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 
 use crate::chain::transaction::Transaction;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Block {
   pub index: usize,
   pub hash: String,

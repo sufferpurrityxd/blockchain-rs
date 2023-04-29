@@ -1,8 +1,7 @@
 use crate::{
   chain::block::Block,
-
+  chain::transaction::Transaction,
 };
-use crate::chain::transaction::Transaction;
 
 pub struct Blockchain {
   pub blocks: Vec<Block>,
@@ -31,6 +30,14 @@ impl Blockchain {
       },
     }
   }
+
+  pub fn add_block(&mut self, block: Block) { self.blocks.push(block) }
+
+  pub fn is_valid_transaction(&self, _transaction: &Transaction) -> bool {
+    // TODO
+    return true;
+  }
+
 }
 
 fn create_genesis_block() -> Block {

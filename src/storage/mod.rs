@@ -45,9 +45,7 @@ impl Storage {
     key: i32,
     item: &Item,
   ) -> Result<(), Error> {
-    return self
-      .0
-      .put(
+    return self.0.put(
         WriteOptions::new(),
         key,
         bincode::serialize(&item)

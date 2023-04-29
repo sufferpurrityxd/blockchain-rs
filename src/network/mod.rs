@@ -1,4 +1,5 @@
 pub mod actions;
+pub mod miner;
 
 use either::Either;
 use futures::{
@@ -89,7 +90,7 @@ impl NetworkLoop {
             Some(_) => log::info!("Block with index: {key:?} already exists"),
             None => {
               self.add_block(key, &block).await;
-              self.event_tx.send(Event::SyncBlock {key, block}).await.unwrap();
+              self.event_tx.send(Event::SyncBlock { key, block }).await.unwrap();
             },
           };
         },
