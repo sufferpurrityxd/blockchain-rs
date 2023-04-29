@@ -12,3 +12,11 @@ pub enum Command {
   },
   Transaction(Transaction),
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum Event {
+  SyncBlock {
+    key: i32,
+    block: Block,
+  }
+}

@@ -1,10 +1,12 @@
-pub mod command;
+pub mod actions;
 
 use either::Either;
 use futures::{
   prelude::*,
-  channel::mpsc::Sender,
-  channel::mpsc::Receiver,
+  channel::mpsc::{
+    Sender,
+    Receiver,
+  },
 };
 
 use libp2p::{
@@ -21,7 +23,10 @@ use libp2p::{
 
 use crate::{
   storage::Storage,
-  network::command::Command,
+  network::actions::{
+    Event,
+    Command,
+  },
 };
 
 const MAX_TRANSMIT_SIZE: usize = 262144;
@@ -56,6 +61,7 @@ pub struct NetworkLoop {
   pub swarm: swarm::Swarm<BlockchainBehaviour>,
   pub storage: Storage,
   pub command_rx: Receiver<Command>,
+  pub event_tx: Sender<Event>,
 }
 
 
@@ -64,13 +70,36 @@ impl NetworkLoop {
     swarm: swarm::Swarm<BlockchainBehaviour>,
     storage: Storage,
     command_rx: Receiver<Command>,
+    event_tx: Sender<Event>,
   ) -> Self {
     return Self {
       swarm,
       storage,
       command_rx,
+      event_tx,
     }
   }
+
+  pub async fn handle_gossipsub_message(&mut self, message: gossipsub::Message) {
+    match bincode::deserialize::<Event>(message.data.as_slice()) {
+      Ok(event) => match event {
+        Event::SyncBlock { key, block } => {
+          match self.storage.get_block(key) {
+            Some(_) => log::info!("Block with index: {key:?} already exists"),
+            None => {
+              match self.storage.add_item(key, &block) {
+                Ok(_) => log::info!("Added block into storage from network"),
+                Err(e) => log::error!("Failed to add block from network: {e:?}"),
+              };
+              self.event_tx.send(Event::SyncBlock {key, block}).await.unwrap();
+            },
+          };
+        },
+      }
+      Err(e) => log::error!("Failed to deserialize message from gossipsub, e: {e:?}"),
+    }
+  }
+
 
   pub async fn handle_swarm_event(
     &mut self,
@@ -104,9 +133,18 @@ impl NetworkLoop {
           self.swarm.behaviour_mut().gossipsub.remove_explicit_peer(&peer_id);
         }
       },
+      swarm::SwarmEvent::Behaviour(
+        BlockChainBehaviourEnum::Gossipsub(
+          gossipsub::Event::Message {
+            propagation_source: _peer_id,
+            message_id: _id,
+            message,
+          },
+        ),
+      ) => self.handle_gossipsub_message(message).await,
       swarm::SwarmEvent::NewListenAddr { address, .. } => {
         log::info!("Local node is running on: {address}");
-      }
+      },
       _ => {}
     }
   }
@@ -121,11 +159,11 @@ impl NetworkLoop {
           Ok(_) => log::info!("Added new block into storage"),
           Err(e) => log::error!("Failed to add new block into storage, e: {e:?}")
         }
-        match bincode::serialize(&block) {
-          Ok(bytes_block) => {
+        match bincode::serialize(&Event::SyncBlock { key, block }) {
+          Ok(event) => {
               match self.swarm.behaviour_mut().gossipsub.publish(
                 gossipsub::IdentTopic::new("BLOCK"),
-                bytes_block,
+                event.as_slice(),
               ) {
                 Ok(_) => log::info!("Sent new block to peers"),
                 Err(e) => log::error!("Failed to send new block to peers: {e:?}"),
@@ -156,7 +194,7 @@ impl NetworkLoop {
 
 pub async fn build(
   storage: Storage
-) -> Result<(NetworkLoop, Sender<Command>), Box<dyn std::error::Error>> {
+) -> Result<(NetworkLoop, Sender<Command>, Receiver<Event>), Box<dyn std::error::Error>> {
   let keypair = identity::Keypair::generate_ed25519();
   let peer_id = keypair.public().to_peer_id();
   let transactions_topic = gossipsub::IdentTopic::new("TRANSACTION");
@@ -191,8 +229,8 @@ pub async fn build(
   swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
 
   let (command_tx, command_rx) = futures::channel::mpsc::channel::<Command>(0);
+  let (event_tx, event_rx) = futures::channel::mpsc::channel::<Event>(0);
+  let network_loop = NetworkLoop::new(swarm, storage, command_rx, event_tx);
 
-  let network_loop = NetworkLoop::new(swarm, storage, command_rx);
-
-  return Ok((network_loop, command_tx));
+  return Ok((network_loop, command_tx, event_rx));
 }
