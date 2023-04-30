@@ -10,24 +10,14 @@ pub struct Blockchain {
 }
 
 impl Blockchain {
-  pub fn new(
-    blocks: Option<Vec<Block>>,
-    transactions: Option<Vec<Transaction>>,
-    difficulty: Option<usize>,
-  ) -> Self {
+  pub fn new(blocks: Option<Vec<Block>>) -> Self {
     return Self {
       blocks: match blocks {
         Some(blocks) => blocks,
         None => vec![create_genesis_block()],
       },
-      transactions: match transactions {
-        None => Default::default(),
-        Some(transactions) => transactions,
-      },
-      difficulty: match difficulty {
-        None => 4,
-        Some(difficulty) => difficulty,
-      },
+      transactions: Default::default(),
+      difficulty: 4
     }
   }
 

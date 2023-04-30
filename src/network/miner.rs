@@ -42,7 +42,7 @@ impl Miner {
     }
   }
 
-  pub async fn execute(&mut self)  {
+  pub async fn execute(mut self)  {
     loop {
       if self.is_ready_to_sign() { self.process_new_block().await };
       if let Ok(Some(event)) = self.event_rx.try_next() { self.handle_event(event).await };

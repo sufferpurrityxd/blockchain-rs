@@ -4,6 +4,7 @@ use leveldb::{
   error::Error,
   options::Options,
   database::Database,
+  iterator::Iterable,
   options::{
     WriteOptions,
     ReadOptions,
@@ -66,6 +67,20 @@ impl Storage {
         }
       },
       Err(_) => None,
+    }
+  }
+
+  pub fn get_chain(
+    &self
+  ) -> Option<Vec<Block>> {
+    let mut blocks = Vec::new();
+    for key in self.0.keys_iter(ReadOptions::new()) {
+      if let Some(Ok(block)) = self.get_block(key) { blocks.push(block) }
+    }
+    return if blocks.len() >= 1 {
+      Some(blocks)
+    } else {
+      None
     }
   }
 }
