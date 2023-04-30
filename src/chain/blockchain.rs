@@ -33,9 +33,29 @@ impl Blockchain {
 
   pub fn add_block(&mut self, block: Block) { self.blocks.push(block) }
 
+  pub fn add_transaction(&mut self, transaction: Transaction) { self.transactions.push(transaction) }
+
+  pub fn address_balance(&self, _address: String) -> f32 {
+    let mut b = 0.0;
+    for block in self.blocks.iter() {
+      for transaction in block.transactions.iter() {
+        if transaction.to == _address {
+          b += transaction.amount;
+        } else if transaction.from == _address {
+          b -= transaction.amount;
+        }
+      }
+    }
+    return b;
+  }
+
+
   pub fn is_valid_transaction(&self, _transaction: &Transaction) -> bool {
-    // TODO
-    return true;
+    return if self.address_balance(_transaction.from.clone()) >= _transaction.amount {
+      true
+    } else {
+      false
+    }
   }
 
 }

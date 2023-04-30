@@ -133,9 +133,9 @@ impl NetworkLoop {
 
   pub async fn handle_command(&mut self, command: Command) {
     match command {
-      Command::AddBlock(sync) => {
-        self.add_block(sync.key, &sync.block).await;
-        match bincode::serialize(&GossipsubEvent::SyncNetworkBlock(sync) ) {
+      Command::AddBlock(meta) => {
+        self.add_block(meta.key, &meta.block).await;
+        match bincode::serialize(&GossipsubEvent::SyncNetworkBlock(meta)) {
           Ok(event) => {
               match self.swarm.behaviour_mut().gossipsub.publish(
                 gossipsub::IdentTopic::new("BLOCK"),
@@ -148,21 +148,38 @@ impl NetworkLoop {
           Err(e) => log::error!("Failed to serialize block, e: {e:?}"),
         }
       }
+      Command::SendTransaction(meta) => {
+        match bincode::serialize(&GossipsubEvent::SendNetworkTransaction(meta))  {
+          Ok(event) => {
+            match self.swarm.behaviour_mut().gossipsub.publish(
+              gossipsub::IdentTopic::new("TRANSACTION"),
+              event.as_slice(),
+            ) {
+              Ok(_) => log::info!("Sent transaction to peers"),
+              Err(e) => log::error!("Failed to send new transaction to peers: {e:?}"),
+            }
+          }
+          Err(e) => log::error!("Failed to serializer transaction, e: {e:?}"),
+        }
+      },
     }
   }
 
   pub async fn handle_gossipsub_message(&mut self, message: gossipsub::Message) {
     match bincode::deserialize::<GossipsubEvent>(message.data.as_slice()) {
-      Ok(event) => match event {
-        GossipsubEvent::SyncNetworkBlock(sync)=> {
-          match self.storage.get_block(sync.key) {
-            Some(_) => log::info!("Block with index: {:?} already exists", sync.key),
+      Ok(meta) => match meta {
+        GossipsubEvent::SyncNetworkBlock(meta)=> {
+          match self.storage.get_block(meta.key) {
+            Some(_) => log::info!("Block with index: {:?} already exists", meta.key),
             None => {
-              self.add_block(sync.key, &sync.block).await;
-              self.event_tx.send(Event::SyncBlock(sync)).await.unwrap();
+              self.add_block(meta.key, &meta.block).await;
+              self.event_tx.send(Event::SyncBlock(meta)).await.unwrap();
             },
           };
         },
+        GossipsubEvent::SendNetworkTransaction(meta)  => {
+          self.event_tx.send(Event::SendTransaction(meta)).await.unwrap();
+        }
       }
       Err(e) => log::error!("Failed to deserialize message from gossipsub, e: {e:?}"),
     }

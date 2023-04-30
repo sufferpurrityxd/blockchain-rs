@@ -18,6 +18,7 @@ use crate::{
     Event,
   },
 };
+use crate::chain::transaction::Transaction;
 
 
 const MAX_TRANSACTIONS_IN_BLOCK: usize = 5000;
@@ -50,7 +51,8 @@ impl Miner {
 
   async fn handle_event(&mut self, event: Event) {
     match event {
-      Event::SyncBlock(sync)  => self.blockchain.add_block(sync.block),
+      Event::SyncBlock(meta)  => self.blockchain.add_block(meta.block),
+      Event::SendTransaction(meta) => self.blockchain.add_transaction(Transaction::from(meta)),
     }
   }
 
